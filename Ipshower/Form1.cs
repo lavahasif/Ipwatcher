@@ -1,0 +1,261 @@
+﻿using Microsoft.WindowsAPICodePack.Net;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Ipshower
+{
+    public partial class Form1 : Form
+    {
+        String ips = "";
+        String ips2 = "";
+        bool isshowall = false;
+        public Form1()
+        {
+
+            InitializeComponent();
+            //notifyIcon1.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            notifyIcon1.Visible = true;
+            notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
+            notifyIcon1.Text = "Network";
+            notifyIcon1.BalloonTipTitle = "Network Monitor Started";
+            notifyIcon1.BalloonTipText = "Showing Available Network";
+            notifyIcon1.ShowBalloonTip(0);
+            //this.Opacity = .98;
+            this.BackColor = Color.White;
+            this.ForeColor = SystemColors.ControlDark;
+            this.Height = 300;
+            this.ShowInTaskbar = false;
+            this.Width = 300;
+
+            //this.BackColor = Color.Transparent;
+            this.TopMost = true;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            Rectangle resolution = Screen.PrimaryScreen.Bounds;
+            //this.Left = resolution.Width - 150;
+            StartPosition = FormStartPosition.Manual;
+            Location = new Point(resolution.Width - 310, 0 + 10);
+            SetNetworkResult();
+            //this.WindowState = FormWindowState.Maximized;
+            this.Paint += Watermark_Paint;
+
+
+
+
+            NetworkChange.NetworkAddressChanged += new
+                 NetworkAddressChangedEventHandler(AddressChangedCallback);
+            //notifyIcon1.Visible = true;
+            //notifyIcon1.ShowBalloonTip(10000);
+
+            Console.WriteLine("Listening for address changes. Press any key to exit.");
+            Console.ReadLine();
+        }
+
+        void SetNetworkResult()
+        {
+            var sConnected = "";
+            var networks = NetworkListManager.GetNetworks(NetworkConnectivityLevels.Connected);
+            foreach (var network in networks)
+            {
+                sConnected = ((network.IsConnected == true) ? " (connected)" : " (disconnected)");
+                ips2 += "Network : " + network.Name + "\n Category : " + network.Category.ToString() + sConnected + "\n";
+                Console.WriteLine(ips);
+            }
+
+
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+
+                foreach (UnicastIPAddressInformation ip in nic.GetIPProperties().UnicastAddresses)
+                {
+
+                    if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        if (nic.Name == "Wi-Fi" || nic.Name == "Ethernet")
+
+                            ips += nic.Name + "  " + nic.OperationalStatus + "\n" + ip.Address.ToString() + "\n";
+                        Console.WriteLine("   {0} is {1},{2}", nic.Name, nic.OperationalStatus, ip.Address.ToString());
+
+
+                    }
+                }
+            }
+        }
+        public void AddressChangedCallback(object sender, EventArgs e)
+        {
+            ips = "";
+            ips2 = "";
+            SetNetworkResult();
+            SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 15, FontStyle.Bold));
+            this.Height = (int)szF.Height;
+            this.Invalidate();  // request a delayed Repaint by the normal MessageLoop system    
+            //this.Update();      // forces Repaint of invalidated area 
+            //this.Refresh();
+            //this.Paint += Watermark_Paint;
+
+        }
+
+        private void Watermark_Paint(object sender, PaintEventArgs e)
+        {
+
+            if (isshowall)
+
+                e.Graphics.DrawString(ips, new Font("tahoma", 10, FontStyle.Bold), Brushes.Green, 0, 0);
+            else
+
+            if (value != "")
+            {
+                // play with this drawing code to change your "watermark"
+                SizeF szF = e.Graphics.MeasureString(ips, new Font("Segoe UI", 29, FontStyle.Bold));
+                //e.Graphics.RotateTransform(-90);
+                int max = Math.Max(this.Width, this.Height);
+                e.Graphics.DrawString(ips, new Font("tahoma", 15, FontStyle.Bold), Brushes.Green, 0, 0);
+                e.Graphics.DrawString(ips2, new Font("tahoma", 10, FontStyle.Bold), new SolidBrush(Color.FromArgb(255, Color.Green)), 0, 100);
+                //    for (int y = 0; y <= max; y = y + ((int)szF.Height))
+                //    {
+                //        e.Graphics.DrawString(ips, new Font("tahoma", 10, FontStyle.Bold), Brushes.Red, 0, y);
+                //}
+            }
+
+        }
+
+        private void Form1_MaximumSizeChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void notifyIcon1_MouseClick(object sender, MouseEventArgs e)
+        {
+            //this.Hide();
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            this.Show();
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void showToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Show();
+        }
+
+        private void hIdeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+        }
+
+        private void showAllNetworkDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            isshowall = true;
+            ips = "";
+            ips2 = "";
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+
+                foreach (UnicastIPAddressInformation ip in nic.GetIPProperties().UnicastAddresses)
+                {
+
+                    if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        //if (nic.Name == "Wi-Fi" || nic.Name == "Ethernet")
+
+                        ips += nic.Name + "  " + nic.OperationalStatus + "\n" + ip.Address.ToString() + "\n";
+                        Console.WriteLine("   {0} is {1},{2}", nic.Name, nic.OperationalStatus, ip.Address.ToString());
+
+
+                    }
+                }
+            }
+            // play with this drawing code to change your "watermark"
+
+            SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 15, FontStyle.Bold));
+            this.Height = (int)szF.Height;
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            isshowall = false;
+            ips = "";
+            ips2 = "";
+            SetNetworkResult();
+            SizeF szF = this.CreateGraphics().MeasureString(ips+ips2, new Font("Segoe UI", 15, FontStyle.Bold));
+            this.Height = (int)szF.Height;
+            this.Invalidate();
+        }
+
+        private void toolStripMenuItem2_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetData(DataFormats.Text, (Object)ips);
+            notifyIcon1.BalloonTipTitle = "Copy to Clip";
+            notifyIcon1.BalloonTipText = ips;
+            notifyIcon1.ShowBalloonTip(0);
+        }
+
+        private void toolStripComboBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void toolStripComboBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var CON = ((System.Windows.Forms.ToolStripControlHost)sender).Text;
+            if (CON == "NONE")
+                this.Opacity = 1;
+            else if (CON == "10")
+                this.Opacity = .1;
+            else if (CON == "25")
+                this.Opacity = .25;
+            else if (CON == "50")
+                this.Opacity = .50;
+            else if (CON == "75")
+                this.Opacity = .75;
+            else 
+                this.Opacity = 1;
+
+        }
+    }
+
+
+    //public partial class Form1 : Form
+    //{
+
+    //    public String value = "Idle_Mind"; // set this somehow
+    //    private const int WS_EX_TRANSPARENT = 0x20;
+
+    //    //public Watermark()
+    //    //{
+
+    //    //}
+
+    //    // this makes the form ignore all clicks, so it is "passthrough"
+    //    protected override System.Windows.Forms.CreateParams CreateParams
+    //    {
+    //        get
+    //        {
+    //            CreateParams cp = base.CreateParams;
+    //            cp.ExStyle = cp.ExStyle | WS_EX_TRANSPARENT;
+    //            return cp;
+    //        }
+    //    }
+
+
+    //}
+
+}
