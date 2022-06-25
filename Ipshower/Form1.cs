@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -90,15 +91,6 @@ namespace Ipshower
         }
         public void AddressChangedCallback(object sender, EventArgs e)
         {
-            ips = "";
-            ips2 = "";
-            SetNetworkResult();
-            SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 15, FontStyle.Bold));
-            this.Height = (int)szF.Height;
-            this.Invalidate();  // request a delayed Repaint by the normal MessageLoop system    
-            //this.Update();      // forces Repaint of invalidated area 
-            //this.Refresh();
-            //this.Paint += Watermark_Paint;
 
         }
 
@@ -113,9 +105,10 @@ namespace Ipshower
             if (value != "")
             {
                 // play with this drawing code to change your "watermark"
-                SizeF szF = e.Graphics.MeasureString(ips, new Font("Segoe UI", 29, FontStyle.Bold));
+                SizeF szF = e.Graphics.MeasureString(ips + ips2, new Font("Segoe UI", 15, FontStyle.Bold));
                 //e.Graphics.RotateTransform(-90);
-                int max = Math.Max(this.Width, this.Height);
+
+                this.Height = (int)szF.Height;
                 e.Graphics.DrawString(ips, new Font("tahoma", 15, FontStyle.Bold), Brushes.Green, 0, 0);
                 e.Graphics.DrawString(ips2, new Font("tahoma", 10, FontStyle.Bold), new SolidBrush(Color.FromArgb(255, Color.Green)), 0, 100);
                 //    for (int y = 0; y <= max; y = y + ((int)szF.Height))
@@ -180,8 +173,9 @@ namespace Ipshower
             }
             // play with this drawing code to change your "watermark"
 
-            SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 15, FontStyle.Bold));
+            SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 10, FontStyle.Bold));
             this.Height = (int)szF.Height;
+
         }
 
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
@@ -190,9 +184,12 @@ namespace Ipshower
             ips = "";
             ips2 = "";
             SetNetworkResult();
-            SizeF szF = this.CreateGraphics().MeasureString(ips+ips2, new Font("Segoe UI", 15, FontStyle.Bold));
-            this.Height = (int)szF.Height;
-            this.Invalidate();
+            this.Invoke((MethodInvoker)delegate
+            {
+                SizeF szF = this.CreateGraphics().MeasureString(ips + ips2, new Font("Segoe UI", 10, FontStyle.Bold));
+                this.Height = (int)szF.Height;
+                this.Invalidate();
+            });
         }
 
         private void toolStripMenuItem2_Click(object sender, EventArgs e)
@@ -226,9 +223,100 @@ namespace Ipshower
                 this.Opacity = .50;
             else if (CON == "75")
                 this.Opacity = .75;
-            else 
+            else
                 this.Opacity = 1;
 
+        }
+
+        private void toolStripMenuItem3_Click(object sender, EventArgs e)
+        {
+            isshowall = true;
+            ips = "";
+            ips2 = "";
+            int[] ports = { 1433, 3306, 3389, 8069, 80, 1434 };
+            foreach (var item in ports)
+            {
+                using (TcpClient tcpClient = new TcpClient())
+                {
+
+
+
+                    var port = item;
+                    try
+                    {
+                        var ip = "127.0.0.1";
+
+                        tcpClient.Connect(ip, port);
+                        ips += "localhost    " + port.ToString() + "     open \n";
+                        Console.WriteLine("Port open");
+                    }
+                    catch (Exception)
+                    {
+                        ips += "localhost    " + port.ToString() + "     Closed \n";
+                        Console.WriteLine("Port closed");
+                    }
+                }
+            }
+            this.Invoke((MethodInvoker)delegate
+            {
+                SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 10, FontStyle.Bold));
+                this.Height = (int)szF.Height;
+            });
+        }
+
+        private void toolStripTextBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void toolStripTextBox1_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)13)
+            {
+                isshowall = true;
+                ips = "";
+                ips2 = "";
+                var text = toolStripTextBox1.Text;
+                var arr = text.Split(';');
+                try
+                {
+                    var ip = arr[0];
+                    var port = Int32.Parse(arr[1]);
+
+
+
+                    using (TcpClient tcpClient = new TcpClient())
+                    {
+
+
+
+
+                        try
+                        {
+
+
+                            tcpClient.Connect(ip, port);
+                            ips += $"{ip}    " + port.ToString() + "     open \n";
+                            Console.WriteLine("Port open");
+                        }
+                        catch (Exception)
+                        {
+                            ips += $"{ip}     " + port.ToString() + "     Closed \n";
+                            Console.WriteLine("Port closed");
+                        }
+                    }
+
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        SizeF szF = this.CreateGraphics().MeasureString(ips, new Font("Segoe UI", 10, FontStyle.Bold));
+                        this.Height = (int)szF.Height;
+                    });
+                }
+                catch (Exception es)
+                {
+
+                }
+            }
         }
     }
 
