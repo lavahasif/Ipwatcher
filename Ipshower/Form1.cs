@@ -91,7 +91,17 @@ namespace Ipshower
         }
         public void AddressChangedCallback(object sender, EventArgs e)
         {
+            isshowall = false;
+            ips = "";
+            ips2 = "";
+            SetNetworkResult();
 
+            this.Invoke((MethodInvoker)delegate
+            {
+                SizeF szF = this.CreateGraphics().MeasureString(ips + ips2, new Font("Segoe UI", 10, FontStyle.Bold));
+                this.Height = (int)szF.Height;
+                this.Invalidate();
+            });
         }
 
         private void Watermark_Paint(object sender, PaintEventArgs e)

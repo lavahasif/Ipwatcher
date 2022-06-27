@@ -1,0 +1,124 @@
+    def post2(self, request):
+
+        p2 = request.POST.get('p2', False)
+        name = request.POST.get('name', False)
+        p1 = request.POST.get('p1', False)
+        blood = request.POST.get('blood', False)
+        address = request.POST.get('address', False)
+        phone = request.POST.get('phone', False)
+        email = request.POST.get('email', False)
+        # date_str = request.POST.get('date', False)
+        date_str = '12/06/2021'
+        photo = request.FILES.get('photo', False)
+        unit = request.POST.get('unit', False)
+        sector = request.POST.get('sector', False)
+        district = request.POST.get('district', False)
+        experience = request.POST.get('experience', False)
+        course_from = request.POST.get('course_from', False)
+        work_place = request.POST.get('work_place', False)
+        course_certificate = request.FILES.get('course_certificate', False)
+        format, imgstr = p1.split(';base64,')
+
+        ext = format.split('/')[-1]
+
+        msg = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+        # msg = base64.b64decode(p1)
+        photo2 = ContentFile(msg, phone)
+        if name and blood and address and date_str and photo and unit and \
+                sector and district and experience and course_from and \
+                work_place and course_certificate and phone and \
+                email:
+
+            date_string = date_str.split("/")
+            date_date = date(year=int(date_string[2]),
+                             month=int(date_string[1]),
+                             day=int(date_string[0]))
+
+            phone = phone[-10:]
+
+            try:
+                q1 = request.POST.get('ques_1', False)
+                if q1:
+                    q1id = request.COOKIES['ques_1']
+                    answer = str(Question.objects.get(id=q1id).ans)
+                    if str(q1) != answer:
+                        return RegFailed().get(request, error='question')
+
+                q2 = request.POST.get('ques_2', False)
+                if q2:
+                    q2id = request.COOKIES['ques_2']
+                    answer = str(Question.objects.get(id=q2id).ans)
+                    if str(q2) != answer:
+                        return RegFailed().get(request, error='question')
+
+                q3 = request.POST.get('ques_3', False)
+                if q3:
+                    q3id = request.COOKIES['ques_3']
+                    answer = str(Question.objects.get(id=q3id).ans)
+                    if str(q3) != answer:
+                        return RegFailed().get(request, error='question')
+            except:
+                pass
+
+            # if User.objects.filter(phone=phone, status=0).exists():
+            #     return RegFailed().get(request, error='pending')
+            # elif User.objects.filter(phone=phone, status=1).exists():
+            #     return RegFailed().get(request, error='approved')
+            # elif User.objects.filter(phone=phone, status=2).exists():
+            #     return RegFailed().get(request, error='cancelled')
+
+            data = {
+                "name": name,
+                "blood": blood,
+                "address": address,
+                "phone": phone,
+                "email": email,
+                "date": date_date,
+                "photo": photo2,
+                "unit": unit,
+                "sector": sector,
+                "district": district,
+                "experience": experience,
+                "course_from": course_from,
+                "work_place": work_place,
+                "course_certificate": request.FILES['course_certificate']
+            }
+
+            if User.objects.filter(phone=phone).exists():
+                old_user = User.objects.get(phone=phone)
+                serializer = UserRegSerializer(data=data, instance=old_user)
+                # print("errors : {}".format(serializer.errors))
+            else:
+                data['id_number'] = gen_user_id()
+                serializer = UserRegSerializer(data=data)
+                # print("errors : {}".format(serializer.errors))
+            if serializer.is_valid():
+                serializer.save()
+
+                config = pdfkit.configuration(
+                    wkhtmltopdf='/usr/bin/wkhtmltopdf')
+                # config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+                dist = serializer.data['district'][0:3]
+                nam = serializer.data['id_number']+"_"+dist
+                target_path = os.path.join(
+                    settings.PDF_ROOT, f"{nam}.pdf")
+                uid = str(serializer.data['id'])
+                id_ = "http://" + str(request.get_host()) + '/gen_id/' + uid
+                localhost_ = "http://localhost:8069/"
+                repository = PdfRepository()
+                # repository.TestPdf()
+                repository.getWorkingPdf(uid)
+                # pdfkit.from_url(id_, target_path,
+                #                 configuration=config)
+                # pdfkit.from_url('http://google.com', 'out.pdf', configuration=config)
+
+                path_to_file = target_path
+                # self.downloadfile(name, path_to_file)
+                return redirect('/reg_success/' + str(serializer.data['id_number'])+"/" + dist)
+            else:
+                print("errors : {}".format(serializer.errors))
+                return redirect('/reg_failed')
+                # return RegFailed().get(request, error='pending')
+        else:
+            # print("errors : {}".format(serializer.errors))
+            return redirect('/reg_failed')
